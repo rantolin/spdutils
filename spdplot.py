@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/python
+
 '''
 Created on 14/08/2013
 
-@author: roberto
+@author: roberto DOT antolin AT forestry DOT gis.gov.uk
 '''
 
 import pylab
