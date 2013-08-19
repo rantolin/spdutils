@@ -57,7 +57,7 @@ def main():
     pylab.ylabel('Time (sec)')
     pylab.title('%s run times' %(cmd))
     pylab.show()
-    pylab.savefig(path + cmd + '_times.png')
+    pylab.savefig(path + '/' + cmd + '_times.png')
 
 
 if __name__ == '__main__':
