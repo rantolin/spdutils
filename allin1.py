@@ -1,11 +1,18 @@
 #!/usr/bin/python2.7
 # encoding: utf-8
 '''
-ThL_allinone -- ThermoLiDAR whole workflow
+allin1 -- ThermoLiDAR whole workflow
 
-ThL_allinone is a description
+allin1 intends to be a script interface that computes in a single call, the most common LiDAR products from DTM to CHM,
+including height metrics. It is based on the workflow chart that appears in Bunting et al. (2013).
+allin1 performs a default analysis and lacks for many the capabilities that are included in the single spdtools. The main reason is to not overwhelm the 
+user with options and parameters. Exceptions are made for single options as for the binsize and metrics (in coming version)
 
-It defines classes_and_methods
+As point out in the spdlib tutorials (http://http://www.spdlib.org/), default values for --blockcols and --blockrows are both set 
+to 100. Default interpolation is made by the Natural Neighbor method which masks outputs in order to avoid interpolation in empty zones.
+Currently, the default raster output format is the ENVI format. Ground is classify by means of the progressive morphology algorithm: spdpmfgrd. 
+Point heights from ground are obtained by performing an interpolation during the execution of spddefheight by the --interp option and an 
+--overlap value equal to 10. 
 
 @author:     rantolin
         
@@ -80,10 +87,10 @@ USAGE
         # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("-b", "--binsize", help="Bin size for SPD file index [Default: 1]", default=1, type=float)
-        parser.add_argument("-x", "--xml", help="XML file defining metrics")
+        parser.add_argument("-m", "--xml", help="XML file defining metrics")
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
         parser.add_argument(dest="infile", help="Input file [default: %(default)s]", metavar="in", nargs='+')
-        parser.add_argument(dest="oufile", help="Base name for output files [default: %(default)s]", metavar="out")
+        parser.add_argument(dest="outfile", help="Base name for output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]")
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
@@ -112,27 +119,29 @@ USAGE
         #     ### do something with inpath ###
         #     print(inpath)
 
-        outDSM = 'dsm.img'
-        inSPD = 'spdfile.spd'
+        inSPD = inFile[0]
         
         if las:
-            inLAS = inFile
+            inLAS = inSPD
             outSPD = outFiles + ".spd"
-            commandline = 'spdtranslate --if LAS --of SPD -o %s -i %s -x LAST_RETURN -b {}' % (inLAS, outSPD, binsize)
-
+            inSPD = outSPD
+            commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
+            print commandline
+            
         # Create DSM 
-        inSPD = outSPD
         outDSM = outFiles + "_DSM.img"
-        commandline = 'spdinterp -r 100 -c 100 --dsm --height -f ENVI  -b 1 %s %s' % (inSPD, outDSM)
+        commandline = 'spdinterp -r 100 -c 100 --dsm --height -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
+        print commandline
         proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
         proc.wait()
         if verbose > 0:
             printVerbose(proc)
-        
+
         # Classify
-        inPmfGrd = outSPD
+        inPmfGrd = inSPD
         outPmfGrd = outFiles + "_g.spd"
-        commandline = 'spdpmfgrd %s %s' %(inPmfGrd, outPmfGrd)
+        commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
+        print commandline
         proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
         proc.wait()
         if verbose > 0:
@@ -141,7 +150,8 @@ USAGE
         # Create DTM 
         inDTM = outPmfGrd
         outDTM = outFiles + "_DTM.img"
-        commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI -b 1 %s %s' % (inDTM, outDTM)
+        commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
+        print commandline
         proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
         proc.wait()
         if verbose > 0:
@@ -150,7 +160,8 @@ USAGE
         # Define Height
         inDefHeight = outPmfGrd
         outDefHeight = outFiles + "_h.spd"
-        commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s %s' % (inDefHeight, outDefHeight)
+        commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
+        print commandline
         proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
         proc.wait()
         if verbose > 0:
@@ -159,7 +170,8 @@ USAGE
         # Create CHM 
         inCHM = outDefHeight
         outCHM = outFiles + "_CHM.img"
-        commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b 1 %s %s' % (inCHM, outCHM)
+        commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
+        print commandline
         proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
         proc.wait()
         if verbose > 0:
@@ -169,7 +181,8 @@ USAGE
         if inXML:
             inMetrics = outDefHeight
             outMetrics = outFiles + "_metrics.img"
-            commandline = 'spdmetrics -i -f HFA -r 100 -c 100 %s %s %s' %(inXML, inMetrics, outMetrics)
+            commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
+            print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
             if verbose > 0:
                 printVerbose(proc)
