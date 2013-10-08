@@ -86,12 +86,13 @@ USAGE
     try:
         # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
-        parser.add_argument("-b", "--binsize", help="Bin size for SPD file index [Default: 1]", default=1, type=float)
-        parser.add_argument("-m", "--xml", help="XML file defining metrics")
-        parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
-        parser.add_argument(dest="infile", help="Input file [default: %(default)s]", metavar="in", nargs='+')
-        parser.add_argument(dest="outfile", help="Base name for output files [default: %(default)s]", metavar="out")
+        parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: 1]", default=1, type=float)
+        parser.add_argument("-m", "--xml", help="metrix XML file")
+        parser.add_argument(dest="infile", help="input file [default: %(default)s]", metavar="in", nargs='+')
+        parser.add_argument("-o", "--output", help="path to output files [default: %(default)s]", metavar="Path")
+        #parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
+        parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]")
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
         #parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
@@ -104,88 +105,91 @@ USAGE
         #recurse = args.recurse
         las = args.las
         binsize = args.binsize
-        inFile = args.infile
+        inFiles = args.infile
         inXML = args.xml
-        outFiles = args.outfile
-        
-        # if verbose > 0:
-        #     print("Verbose mode on")
-        #     if recurse:
-        #         print("Recursive mode on")
-        #     else:
-        #         print("Recursive mode off")
-        
-        # for inpath in paths:
-        #     ### do something with inpath ###
-        #     print(inpath)
+        outPath = args.output
+                
+        for inFile in inFiles:
+            inSPD = inFile
+            inputName = os.path.basename(inSPD)
+            baseName = inputName.split('.')[0]
+            if os.path.isdir(outPath):
+                outPathName = os.path.abspath(outPath) + '/' + baseName
+            else:
+                print "%s: %s is not a valid path" %(program_name.split('.')[0], outPath)
+                print ""
+                print parser.print_help()
+                return 2
+            print "Processing %s file..." %baseName 
+            print outPathName
 
-        inSPD = inFile[0]
-        
-        if las:
-            inLAS = inSPD
-            outSPD = outFiles + ".spd"
-            inSPD = outSPD
-            commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
-            print commandline
-            
-        # Create DSM 
-        outDSM = outFiles + "_DSM.img"
-        commandline = 'spdinterp -r 100 -c 100 --dsm --height -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
-        print commandline
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-        proc.wait()
-        if verbose > 0:
-            printVerbose(proc)
+            # TODO: Change -c and -r values
 
-        # Classify
-        inPmfGrd = inSPD
-        outPmfGrd = outFiles + "_g.spd"
-        commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
-        print commandline
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-        proc.wait()
-        if verbose > 0:
-            printVerbose(proc)
-
-        # Create DTM 
-        inDTM = outPmfGrd
-        outDTM = outFiles + "_DTM.img"
-        commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
-        print commandline
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-        proc.wait()
-        if verbose > 0:
-            printVerbose(proc)
-
-        # Define Height
-        inDefHeight = outPmfGrd
-        outDefHeight = outFiles + "_h.spd"
-        commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
-        print commandline
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-        proc.wait()
-        if verbose > 0:
-            printVerbose(proc)
-        
-        # Create CHM 
-        inCHM = outDefHeight
-        outCHM = outFiles + "_CHM.img"
-        commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
-        print commandline
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-        proc.wait()
-        if verbose > 0:
-            printVerbose(proc)
-
-        # Derive Metrics
-        if inXML:
-            inMetrics = outDefHeight
-            outMetrics = outFiles + "_metrics.img"
-            commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
+            if las:
+                inLAS = inSPD
+                outSPD = baseName + ".spd"
+                inSPD = outSPD
+                commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
+                print commandline
+                
+            # Create DSM 
+            outDSM = outPathName + "_DSM.img"
+            commandline = 'spdinterp -r 100 -c 100 --dsm --height -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
             print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+            proc.wait()
             if verbose > 0:
                 printVerbose(proc)
+
+            # Classify Ground
+            inPmfGrd = inSPD
+            outPmfGrd = outPathName + "_ground.spd"
+            commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
+            print commandline
+            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+            proc.wait()
+            if verbose > 0:
+                printVerbose(proc)
+
+            # Create DTM 
+            inDTM = outPmfGrd
+            outDTM = outPathName + "_DTM.img"
+            commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
+            print commandline
+            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+            proc.wait()
+            if verbose > 0:
+                printVerbose(proc)
+
+            # Define Height
+            inDefHeight = outPmfGrd
+            outDefHeight = outPathName + "_height.spd"
+            commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
+            print commandline
+            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+            proc.wait()
+            if verbose > 0:
+                printVerbose(proc)
+            
+            # Create CHM 
+            inCHM = outDefHeight
+            outCHM = outPathName + "_CHM.img"
+            commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
+            print commandline
+            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+            proc.wait()
+            if verbose > 0:
+                printVerbose(proc)
+
+            # Derive Metrics
+            if inXML:
+                inMetrics = outDefHeight
+                outMetrics = outPathName + "_metrics.img"
+                commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
+                print commandline
+                proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+                if verbose > 0:
+                    printVerbose(proc)
 
         return 0
     except KeyboardInterrupt:
