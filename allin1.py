@@ -3,21 +3,31 @@
 '''
 allin1 -- ThermoLiDAR whole workflow
 
-allin1 intends to be a script interface that computes in a single call, the most common LiDAR products from DTM to CHM,
-including height metrics. It is based on the workflow chart that appears in Bunting et al. (2013).
-allin1 performs a default analysis and lacks for many the capabilities that are included in the single spdtools. The main reason is to not overwhelm the 
-user with options and parameters. Exceptions are made for single options as for the binsize and metrics (in coming version)
+allin1 intends to be a script interface that computes in a single call, the most common LiDAR products from DTM to
+CHM, including height metrics. It is based on the workflow chart that appears in Bunting et al. (2013).
+allin1 performs a default analysis and lacks for many the capabilities that are included in the single spdtools. The
+main reason is to not overwhelm the user with options and parameters. Exceptions are made for single options as for
+the binsize and metrics (in coming version)
 
-As point out in the spdlib tutorials (http://http://www.spdlib.org/), default values for --blockcols and --blockrows are both set 
-to 100. Default interpolation is made by the Natural Neighbor method which masks outputs in order to avoid interpolation in empty zones.
-Currently, the default raster output format is the ENVI format. Ground is classify by means of the progressive morphology algorithm: spdpmfgrd. 
-Point heights from ground are obtained by performing an interpolation during the execution of spddefheight by the --interp option and an 
---overlap value equal to 10. 
+As point out in the spdlib tutorials (http://http://www.spdlib.org/), default values for --blockcols and --blockrows
+are both set to 100. Default interpolation is made by the Natural Neighbor method which masks outputs in order to
+avoid interpolation in empty zones. Currently, the default raster output format is the ENVI format. Ground is classify
+by means of the progressive morphology algorithm: spdpmfgrd. Point heights from ground are obtained by performing an
+interpolation during the execution of spddefheight by the --interp option and an --overlap value equal to 10.
 
-@author:     rantolin
-        
-@copyright:  2013 Roberto Antolin. All rights reserved.
-        
+Multiple inputs are supported. 
+Output parameter ask for a path into which output files will be recorded. Only valid folder paths are permitted.
+Output file names are compossed by a basename -base on the input name- plus a suffix which describes it. 
+Binsize is the resolution in which raster output will be created.
+XML expects the file containing metrics. So far, only a metric at a time is supported (spdmetrics issues).
+LAS options treats input files as LAS format LiDAR files.
+Different 
+
+
+@author:     Roberto Antolín
+
+@copyright:  2013 Roberto Antolín. All rights reserved.
+
 @license:    license
 
 @contact:    roberto dot antolin at forestry dot gsi dot gov dot uk
@@ -34,7 +44,7 @@ from argparse import RawDescriptionHelpFormatter
 __all__ = []
 __version__ = 0.1
 __date__ = '2013-10-07'
-__updated__ = '2013-10-07'
+__updated__ = '2013-10-11'
 
 DEBUG = 0
 TESTRUN = 0
@@ -50,15 +60,20 @@ class CLIError(Exception):
     def __unicode__(self):
         return self.msg
 
-def printVerbose(process):
-        out, err = process.communicate()
-        process.returncode
-        print out
 
+# TODO: MAKE SCRIPT VERBOSE:
+#   If -v:  Print only files being processed
+#   If -vv: Print files being processed and spdtool output
+#   Otherwise: Nothing
+
+def printCommandOutput(process):
+    out, err = process.communicate()
+    process.returncode
+    print out  
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
-    
+
     if argv is None:
         argv = sys.argv
     else:
@@ -73,10 +88,10 @@ def main(argv=None): # IGNORE:C0111
 
   Created by rantolin on %s.
   Copyright 2013 organization_name. All rights reserved.
-  
+
   Licensed under the Apache License 2.0
   http://www.apache.org/licenses/LICENSE-2.0
-  
+
   Distributed on an "AS IS" basis without warranties
   or conditions of any kind, either express or implied.
 
@@ -89,17 +104,18 @@ USAGE
         parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: 1]", default=1, type=float)
         parser.add_argument("-m", "--xml", help="metrix XML file")
         parser.add_argument(dest="infile", help="input file [default: %(default)s]", metavar="in", nargs='+')
-        parser.add_argument("-o", "--output", help="path to output files [default: %(default)s]", metavar="Path")
+        parser.add_argument("-o", "--output", dest='output', help="path to output files [default: %(default)s]",
+                            metavar="Path")
         #parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
-        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]")
+        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default = 0)
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
         #parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
-        
+
         # Process arguments
         args = parser.parse_args()
-        
+
         #paths = args.paths
         verbose = args.verbose
         #recurse = args.recurse
@@ -107,21 +123,25 @@ USAGE
         binsize = args.binsize
         inFiles = args.infile
         inXML = args.xml
-        outPath = args.output
-                
+        output = args.output
+
         for inFile in inFiles:
-            inSPD = inFile
-            inputName = os.path.basename(inSPD)
+            inputPath, inputName = os.path.split(os.path.realpath(inFile))
             baseName = inputName.split('.')[0]
-            if os.path.isdir(outPath):
-                outPathName = os.path.abspath(outPath) + '/' + baseName
-            else:
+            inSPD = inFile
+
+            if output == None:
+                outPath = os.path.relpath(inputPath)
+            elif not os.path.isdir(output):
                 print "%s: %s is not a valid path" %(program_name.split('.')[0], outPath)
                 print ""
                 print parser.print_help()
                 return 2
-            print "Processing %s file..." %baseName 
-            print outPathName
+            else:
+                outPath = os.path.relpath(output)
+
+            outPathName = os.path.join(outPath, baseName)
+            print "Processing %s file..." %baseName
 
             # TODO: Change -c and -r values
 
@@ -130,66 +150,58 @@ USAGE
                 outSPD = baseName + ".spd"
                 inSPD = outSPD
                 commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
-                print commandline
-                
-            # Create DSM 
+                proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+                proc.wait()
+                if verbose == 2: printCommandOutput(proc)
+
+            # Create DSM
             outDSM = outPathName + "_DSM.img"
-            commandline = 'spdinterp -r 100 -c 100 --dsm --height -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
-            print commandline
+            commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            proc.wait()
-            if verbose > 0:
-                printVerbose(proc)
+            #proc.wait()
+            if verbose == 2: printCommandOutput(proc)
 
             # Classify Ground
             inPmfGrd = inSPD
             outPmfGrd = outPathName + "_ground.spd"
             commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
-            print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            proc.wait()
-            if verbose > 0:
-                printVerbose(proc)
+            #proc.wait()
+            if verbose == 2: printCommandOutput(proc)
 
-            # Create DTM 
+            # Create DTM
             inDTM = outPmfGrd
             outDTM = outPathName + "_DTM.img"
             commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
-            print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            proc.wait()
-            if verbose > 0:
-                printVerbose(proc)
+            #proc.wait()
+            if verbose == 2: printCommandOutput(proc)
 
             # Define Height
             inDefHeight = outPmfGrd
             outDefHeight = outPathName + "_height.spd"
             commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
-            print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
             proc.wait()
-            if verbose > 0:
-                printVerbose(proc)
-            
-            # Create CHM 
+            if verbose == 2: printCommandOutput(proc)
+
+            # Create CHM
             inCHM = outDefHeight
             outCHM = outPathName + "_CHM.img"
             commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
-            print commandline
             proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
             proc.wait()
-            if verbose > 0:
-                printVerbose(proc)
+            if verbose == 2: printCommandOutput(proc)
 
             # Derive Metrics
             if inXML:
                 inMetrics = outDefHeight
                 outMetrics = outPathName + "_metrics.img"
                 commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
-                print commandline
                 proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-                if verbose > 0:
-                    printVerbose(proc)
+                if verbose == 2: printCommandOutput(proc)
+
+            print "[DONE]"
 
         return 0
     except KeyboardInterrupt:
