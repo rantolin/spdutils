@@ -60,16 +60,16 @@ class CLIError(Exception):
     def __unicode__(self):
         return self.msg
 
-
-# TODO: MAKE SCRIPT VERBOSE:
-#   If -v:  Print only files being processed
-#   If -vv: Print files being processed and spdtool output
-#   Otherwise: Nothing
-
-def printCommandOutput(process):
-    out, err = process.communicate()
-    process.returncode
-    print out  
+def runCommand(verb, cmd):
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+    if verb == 2:
+        for line in iter(proc.stdout.readline, ''):
+            line = line.replace('\r', '').replace('\n', '')
+            print line
+            sys.stdout.flush()
+    elif verb == 1:
+        print cmd
+        proc.wait()
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -143,65 +143,50 @@ USAGE
             outPathName = os.path.join(outPath, baseName)
             print "Processing %s file..." %baseName
 
-            # TODO: Change -c and -r values
-
             if las:
                 inLAS = inSPD
                 outSPD = baseName + ".spd"
                 inSPD = outSPD
                 commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
-                proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-                proc.wait()
-                if verbose == 2: printCommandOutput(proc)
+                runCommand(verbose, commandline)
 
             # Create DSM
             outDSM = outPathName + "_DSM.img"
             commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
-            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            #proc.wait()
-            if verbose == 2: printCommandOutput(proc)
+            runCommand(verbose, commandline)
 
             # Classify Ground
             inPmfGrd = inSPD
             outPmfGrd = outPathName + "_ground.spd"
             commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
-            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            #proc.wait()
-            if verbose == 2: printCommandOutput(proc)
+            runCommand(verbose, commandline)
 
             # Create DTM
             inDTM = outPmfGrd
             outDTM = outPathName + "_DTM.img"
             commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
-            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            #proc.wait()
-            if verbose == 2: printCommandOutput(proc)
+            runCommand(verbose, commandline)
 
             # Define Height
             inDefHeight = outPmfGrd
             outDefHeight = outPathName + "_height.spd"
             commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
-            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            proc.wait()
-            if verbose == 2: printCommandOutput(proc)
+            runCommand(verbose, commandline)
 
             # Create CHM
             inCHM = outDefHeight
             outCHM = outPathName + "_CHM.img"
             commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
-            proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-            proc.wait()
-            if verbose == 2: printCommandOutput(proc)
+            runCommand(verbose, commandline)
 
             # Derive Metrics
             if inXML:
                 inMetrics = outDefHeight
                 outMetrics = outPathName + "_metrics.img"
                 commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
-                proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
-                if verbose == 2: printCommandOutput(proc)
+                runCommand(verbose, commandline)
 
-            print "[DONE]"
+            print "[DONE]\n"
 
         return 0
     except KeyboardInterrupt:
