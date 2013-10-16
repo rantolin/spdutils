@@ -15,13 +15,13 @@ avoid interpolation in empty zones. Currently, the default raster output format 
 by means of the progressive morphology algorithm: spdpmfgrd. Point heights from ground are obtained by performing an
 interpolation during the execution of spddefheight by the --interp option and an --overlap value equal to 10.
 
-Multiple inputs are supported. 
+Multiple inputs are supported.
 Output parameter ask for a path into which output files will be recorded. Only valid folder paths are permitted.
-Output file names are compossed by a basename -base on the input name- plus a suffix which describes it. 
+Output file names are compossed by a basename -base on the input name- plus a suffix which describes it.
 Binsize is the resolution in which raster output will be created.
 XML expects the file containing metrics. So far, only a metric at a time is supported (spdmetrics issues).
 LAS options treats input files as LAS format LiDAR files.
-Different 
+Different
 
 
 @author:     Roberto Antolín
@@ -50,15 +50,19 @@ DEBUG = 0
 TESTRUN = 0
 PROFILE = 0
 
+
 class CLIError(Exception):
     '''Generic exception to raise and log different fatal errors.'''
     def __init__(self, msg):
         super(CLIError).__init__(type(self))
         self.msg = "E: %s" % msg
+
     def __str__(self):
         return self.msg
+
     def __unicode__(self):
         return self.msg
+
 
 def runCommand(verb, cmd):
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
@@ -70,8 +74,11 @@ def runCommand(verb, cmd):
     elif verb == 1:
         print cmd
         proc.wait()
+    else:
+        proc.wait()
 
-def main(argv=None): # IGNORE:C0111
+
+def main(argv=None):    # IGNORE:C0111
     '''Command line options.'''
 
     if argv is None:
@@ -109,7 +116,7 @@ USAGE
         #parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
-        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default = 0)
+        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
         #parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
 
@@ -130,10 +137,10 @@ USAGE
             baseName = inputName.split('.')[0]
             inSPD = inFile
 
-            if output == None:
+            if output is None:
                 outPath = os.path.relpath(inputPath)
             elif not os.path.isdir(output):
-                print "%s: %s is not a valid path" %(program_name.split('.')[0], outPath)
+                print "%s: %s is not a valid path" % (program_name.split('.')[0], outPath)
                 print ""
                 print parser.print_help()
                 return 2
@@ -141,7 +148,7 @@ USAGE
                 outPath = os.path.relpath(output)
 
             outPathName = os.path.join(outPath, baseName)
-            print "Processing %s file..." %baseName
+            print "Processing %s file..." % baseName
 
             if las:
                 inLAS = inSPD
@@ -158,7 +165,7 @@ USAGE
             # Classify Ground
             inPmfGrd = inSPD
             outPmfGrd = outPathName + "_ground.spd"
-            commandline = 'spdpmfgrd -i %s -o %s' %(inPmfGrd, outPmfGrd)
+            commandline = 'spdpmfgrd -i %s -o %s' % (inPmfGrd, outPmfGrd)
             runCommand(verbose, commandline)
 
             # Create DTM
@@ -183,7 +190,7 @@ USAGE
             if inXML:
                 inMetrics = outDefHeight
                 outMetrics = outPathName + "_metrics.img"
-                commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' %(inXML, inMetrics, outMetrics)
+                commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' % (inXML, inMetrics, outMetrics)
                 runCommand(verbose, commandline)
 
             print "[DONE]\n"
