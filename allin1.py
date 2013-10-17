@@ -115,9 +115,10 @@ USAGE
                             metavar="Path")
         #parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
+        parser.add_argument("-f", "--filter", dest="filter", help="Filter type [default:  %(default)s]", default="MCC", choices=["MCC", "PMF"])
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
-        parser.add_argument('-V', '--version', action='version', version=program_version_message)
+        parser.add_argument("-V", "--version", action="version", version=program_version_message)
         #parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
 
         # Process arguments
@@ -131,6 +132,7 @@ USAGE
         inFiles = args.infile
         inXML = args.xml
         output = args.output
+        filterAlg = args.filter
 
         for inFile in inFiles:
             inputPath, inputName = os.path.split(os.path.realpath(inFile))
@@ -163,19 +165,21 @@ USAGE
             runCommand(verbose, commandline)
 
             # Classify Ground
-            inPmfGrd = inSPD
-            outPmfGrd = outPathName + "_ground.spd"
-            commandline = 'spdpmfgrd -i %s -o %s' % (inPmfGrd, outPmfGrd)
+            inGrd = inSPD
+            outGrd = outPathName + "_ground.spd"
+            spdFilter = 'spdmccgrd'
+            if filterAlg=="PMF": spdFilter = 'spdpmfgrd'
+            commandline = '%s -i %s -o %s' % (spdFilter, inGrd, outGrd)
             runCommand(verbose, commandline)
 
             # Create DTM
-            inDTM = outPmfGrd
+            inDTM = outGrd
             outDTM = outPathName + "_DTM.img"
             commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
             runCommand(verbose, commandline)
 
             # Define Height
-            inDefHeight = outPmfGrd
+            inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
             commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
             runCommand(verbose, commandline)
@@ -193,7 +197,7 @@ USAGE
                 commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' % (inXML, inMetrics, outMetrics)
                 runCommand(verbose, commandline)
 
-            print "[DONE]\n"
+            print "[DONE]"
 
         return 0
     except KeyboardInterrupt:
