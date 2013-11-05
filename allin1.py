@@ -110,13 +110,14 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: 1]", default=1, type=float)
         parser.add_argument("-m", "--xml", help="metrix XML file")
-        parser.add_argument(dest="infile", help="input file [default: %(default)s]", metavar="in", nargs='+')
+        parser.add_argument(dest="infile", help="input file", metavar="in", nargs='+')
         parser.add_argument("-o", "--output", dest='output', help="path to output files [default: %(default)s]",
                             metavar="Path")
         #parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
         #parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
         parser.add_argument("-f", "--filter", dest="filter", help="Filter type [default:  %(default)s]", default="MCC", choices=["MCC", "PMF"])
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
+        parser.add_argument("-U", "--upd", action="store_true", help="input file is a UPD file (unsorted SPD)")
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
         #parser.add_argument("-r", "--recursive", dest="recurse", action="store_true", help="recurse into subfolders [default: %(default)s]")
@@ -128,6 +129,7 @@ USAGE
         verbose = args.verbose
         #recurse = args.recurse
         las = args.las
+        upd = args.upd
         binsize = args.binsize
         inFiles = args.infile
         inXML = args.xml
@@ -156,13 +158,21 @@ USAGE
                 inLAS = inSPD
                 outSPD = baseName + ".spd"
                 inSPD = outSPD
-                commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
+                commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (binsize, inLAS, outSPD)
+                runCommand(verbose, commandline)
+            
+            elif upd:
+                inUPD = inSPD
+                outSPD = baseName + ".spd"
+                inSPD = outSPD
+                commandline = 'spdtranslate --if SPD --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (10, inUPD, outSPD)
                 runCommand(verbose, commandline)
 
             # Create DSM
             outDSM = outPathName + "_DSM.img"
-            commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inSPD, outDSM)
+            commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inSPD, outDSM)
             runCommand(verbose, commandline)
+            print commandline
 
             # Classify Ground
             inGrd = inSPD
@@ -171,24 +181,28 @@ USAGE
             if filterAlg=="PMF": spdFilter = 'spdpmfgrd'
             commandline = '%s -i %s -o %s' % (spdFilter, inGrd, outGrd)
             runCommand(verbose, commandline)
+            print commandline
 
             # Create DTM
             inDTM = outGrd
             outDTM = outPathName + "_DTM.img"
-            commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inDTM, outDTM)
+            commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inDTM, outDTM)
             runCommand(verbose, commandline)
+            print commandline
 
             # Define Height
             inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
             commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
             runCommand(verbose, commandline)
+            print commandline
 
             # Create CHM
             inCHM = outDefHeight
             outCHM = outPathName + "_CHM.img"
-            commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %f -i %s -o %s' % (binsize, inCHM, outCHM)
+            commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %d -i %s -o %s' % (binsize, inCHM, outCHM)
             runCommand(verbose, commandline)
+            print commandline
 
             # Derive Metrics
             if inXML:
