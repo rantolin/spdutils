@@ -22,8 +22,8 @@ from argparse import RawDescriptionHelpFormatter
 
 __all__ = []
 __version__ = 0.1
-__date__ = '2013-10-07'
-__updated__ = '2013-10-11'
+__date__ = '2013-11-05'
+__updated__ = '2013-11-05'
 
 DEBUG = 0
 TESTRUN = 0
@@ -95,13 +95,13 @@ USAGE
 
         inFiles = args.infile
         
-        tempfileList = tempfile.mktemp() + '.lst'
+        tempfileList = tempfile.mktemp()
         fileList = open(tempfileList, 'w')
-        for inputFile in inFiles:
-            fileList.write(inputFile + '\n')
+        for inFile in inFiles:
+            fileList.write(inFile + '\n')
         fileList.close()
 
-        fileExtent = tempfile.mkdtemp() + '.ext'
+        fileExtent = tempfile.mktemp()
 
         extentcommand = 'spddeftiles --extent -i {0} > {1}'.format(tempfileList, fileExtent)
         subprocess.Popen(extentcommand, shell=True, \
