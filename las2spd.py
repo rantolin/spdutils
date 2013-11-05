@@ -23,7 +23,7 @@ from argparse import RawDescriptionHelpFormatter
 __all__ = []
 __version__ = 0.1
 __date__ = '2013-10-07'
-__updated__ = '2013-10-11'
+__updated__ = '2013-11-05'
 
 DEBUG = 0
 TESTRUN = 0
@@ -118,7 +118,7 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument(dest="infile", help="input file [default: %(default)s]", metavar="in", nargs='+')
         parser.add_argument("-o", "--output", dest='output', help="path to output files [default: %(default)s]", metavar="Path")
-        parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: 1]", default=10, type=float)
+        parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: %(default)s]", default=10, type=float)
         parser.add_argument("-t", "--temppath", dest='temppath', help="A path were temporary files can be written too [default: %(default)s]", default="/tmp/", metavar="Path")
         parser.add_argument("-x", "--indexfield", help="The location used to index the pulses [default: %(default)s]", default="FIRST_RETURN", choices=["FIRST_RETURN", "LAST_RETURN"])
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
