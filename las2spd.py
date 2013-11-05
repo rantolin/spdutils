@@ -13,9 +13,9 @@ las2spd -- Translate LAS files into SPD
 @deffield    updated: Updated
 '''
 
-import sys
-import os
+import sys, os
 import subprocess
+import time
 
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
@@ -67,16 +67,23 @@ def runCommand(verb, cmd):
         if verb == 1:
             stderr = open(os.devnull, 'wb')
 
+        t0 = time.time()
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=False)
         for line in iter(proc.stdout.readline, ''):
             line = line.replace('\r', '').replace('\n', '')
             print line
             sys.stdout.flush()
 
+        t = time.time() - t0
+
     else:
+        t0 = time.time()
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
         proc.communicate()      # Avoid to deadlock using proc.wait()
         proc.wait()
+        t = time.time() - t0
+
+    return t
 
 
 def main(argv=None):    # IGNORE:C0111
@@ -131,27 +138,30 @@ USAGE
         binsize = args.binsize
         verbose = args.verbose
 
-        commands = ['spdtranslate']
-
-        # Projection input and output
-        if inProj is not None:
-            commands.append('--input_proj')
-            commands.append(inProj)
-            if outProj is not None:
-                commands.append('--convert_proj')
-                commands.append('--output_proj')
-                commands.append(outProj)
-
-        # How to index SPD files
-        commands.append('--indexfield')
-        commands.append(indexField)
-        # Bin size
-        commands.append('--binsize')
-        commands.append(str(binsize))
-        # LAS in SPD out
-        commands.append('--if LAS --of SPD')
+        fout = open(os.path.join(output,'las2spd_times.res'), 'w')
+        fout.write('NAME SIZE TIME(SEC)\n')
 
         for inFile in inFiles:
+            commands = ['spdtranslate']
+
+            # Projection input and output
+            if inProj is not None:
+                commands.append('--input_proj')
+                commands.append(inProj)
+                if outProj is not None:
+                    commands.append('--convert_proj')
+                    commands.append('--output_proj')
+                    commands.append(outProj)
+
+            # How to index SPD files
+            commands.append('--indexfield')
+            commands.append(indexField)
+            # Bin size
+            commands.append('--binsize')
+            commands.append(str(binsize))
+            # LAS in SPD out
+            commands.append('--if LAS --of SPD')
+
             if not os.path.isfile(inFile):
                 print "%s: %s is not a valid file" % (program_name.split('.')[0], inFile)
                 print ""
@@ -188,11 +198,17 @@ USAGE
             commands.append('-o')
             commands.append(outSPD)
             commandline = " ".join(commands)
+            print commandline
             #commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
-            runCommand(verbose, commandline)
+            t = runCommand(verbose, commandline)
             #runCommand(verbose, commands)
 
+            outStr = '{0} {1:.1f} {2:10.6f}\n'.format(baseName, size, t)
+            fout.write(outStr)
+
             print "[DONE]"
+
+        fout.close()
 
         return 0
     except KeyboardInterrupt:
