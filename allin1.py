@@ -10,7 +10,7 @@ main reason is to not overwhelm the user with options and parameters. Exceptions
 the binsize and metrics (in coming version)
 
 As point out in the spdlib tutorials (http://http://www.spdlib.org/), default values for --blockcols and --blockrows
-are both set to 100. Default interpolation is made by the Natural Neighbor method which masks outputs in order to
+are both set to 50. Default interpolation is made by the Natural Neighbor method which masks outputs in order to
 avoid interpolation in empty zones. Currently, the default raster output format is the ENVI format. Ground is classify
 by means of the progressive morphology algorithm: spdpmfgrd. Point heights from ground are obtained by performing an
 interpolation during the execution of spddefheight by the --interp option and an --overlap value equal to 10.
@@ -175,7 +175,7 @@ USAGE
 
             # Create DSM
             outDSM = os.path.join(dtmPath, baseName) + "_DSM.img"
-            commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inSPD, outDSM)
+            commandline = 'spdinterp -r 50 -c 50 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inSPD, outDSM)
             runCommand(verbose, commandline)
 
             # Classify Ground
@@ -194,26 +194,26 @@ USAGE
             # Create DTM
             inDTM = outGrd
             outDTM = os.path.join(dsmPath, baseName) + "_DTM.img"
-            commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inDTM, outDTM)
+            commandline = 'spdinterp -r 50 -c 50 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inDTM, outDTM)
             runCommand(verbose, commandline)
 
             # Define Height
             inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
-            commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
+            commandline = 'spddefheight --interp -r 50 -c 50 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
             runCommand(verbose, commandline)
 
             # Create CHM
             inCHM = outDefHeight
             outCHM = os.path.join(chmPath, baseName) + "_CHM.img"
-            commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %d -i %s -o %s' % (binsize, inCHM, outCHM)
+            commandline = 'spdinterp -r 50 -c 50 --dsm --height -f ENVI -b %d -i %s -o %s' % (binsize, inCHM, outCHM)
             runCommand(verbose, commandline)
 
             # Derive Metrics
             if inXML:
                 inMetrics = outDefHeight
                 outMetrics = outPathName + "_metrics.img"
-                commandline = 'spdmetrics --image -f ENVI -r 100 -c 100 -m %s -i %s -o %s' % (inXML, inMetrics, outMetrics)
+                commandline = 'spdmetrics --image -f ENVI -r 50 -c 50 -m %s -i %s -o %s' % (inXML, inMetrics, outMetrics)
                 runCommand(verbose, commandline)
 
             print "[DONE]"
