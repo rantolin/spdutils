@@ -112,7 +112,7 @@ USAGE
         parser.add_argument(dest="infile", help="input file", metavar="in", nargs='+')
         parser.add_argument("-o", "--output", dest='output', help="path to output files [default: %(default)s]", metavar="Path")
         # parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
-        # parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]", default="/tmp", metavar="path")
+        parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]",     metavar="path")
         # parser.add_argument("-f", "--filter", dest="filter", help="Filter type [default:  %(default)s]", default="MCC", choices=["MCC", "PMF"])
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
         # parser.add_argument("-M", "--mosaic", help="Mosaic the images together at the end")
@@ -132,6 +132,7 @@ USAGE
         inFiles = args.infile
         inXML = args.xml
         output = args.output
+        temp = args.temp
         # filterAlg = args.filter
 
         if output is None:
@@ -161,16 +162,18 @@ USAGE
 
             if las:
                 inLAS = inSPD
-                outSPD = baseName + ".spd"
+                outSPD = outPathName + ".spd"
                 inSPD = outSPD
                 commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (binsize, inLAS, outSPD)
+                if temp is not None: commandline += '--temppath {0}'.format(temp)
                 runCommand(verbose, commandline)
 
             elif upd:
                 inUPD = inSPD
-                outSPD = baseName + ".spd"
+                outSPD = outPathName + ".spd"
                 inSPD = outSPD
                 commandline = 'spdtranslate --if SPD --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (10, inUPD, outSPD)
+                if temp is not None: commandline += '--temppath {0}'.format(temp)
                 runCommand(verbose, commandline)
 
             # Create DSM
