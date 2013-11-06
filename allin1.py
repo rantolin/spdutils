@@ -160,7 +160,7 @@ USAGE
                 inSPD = outSPD
                 commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (binsize, inLAS, outSPD)
                 runCommand(verbose, commandline)
-            
+
             elif upd:
                 inUPD = inSPD
                 outSPD = baseName + ".spd"
@@ -172,7 +172,6 @@ USAGE
             outDSM = outPathName + "_DSM.img"
             commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inSPD, outDSM)
             runCommand(verbose, commandline)
-            print commandline
 
             # Classify Ground
             inGrd = inSPD
@@ -181,28 +180,24 @@ USAGE
             if filterAlg=="PMF": spdFilter = 'spdpmfgrd'
             commandline = '%s -i %s -o %s' % (spdFilter, inGrd, outGrd)
             runCommand(verbose, commandline)
-            print commandline
 
             # Create DTM
             inDTM = outGrd
             outDTM = outPathName + "_DTM.img"
             commandline = 'spdinterp -r 100 -c 100 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inDTM, outDTM)
             runCommand(verbose, commandline)
-            print commandline
 
             # Define Height
             inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
             commandline = 'spddefheight --interp -r 100 -c 100 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
             runCommand(verbose, commandline)
-            print commandline
 
             # Create CHM
             inCHM = outDefHeight
             outCHM = outPathName + "_CHM.img"
             commandline = 'spdinterp -r 100 -c 100 --chm --height -f ENVI -b %d -i %s -o %s' % (binsize, inCHM, outCHM)
             runCommand(verbose, commandline)
-            print commandline
 
             # Derive Metrics
             if inXML:
