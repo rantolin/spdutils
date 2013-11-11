@@ -11,7 +11,7 @@ the binsize and metrics (in coming version)
 
 As point out in the spdlib tutorials (http://http://www.spdlib.org/), default values for --blockcols and --blockrows
 are both set to 50. Default interpolation is made by the Natural Neighbor method which masks outputs in order to
-avoid interpolation in empty zones. Currently, the default raster output format is the ENVI format. Ground is classify
+avoid interpolation in empty zones. Currently, the default raster output format is the GTiff format. Ground is classify
 by means of the progressive morphology algorithm: spdpmfgrd. Point heights from ground are obtained by performing an
 interpolation during the execution of spddefheight by the --interp option and an --overlap value equal to 10.
 
@@ -107,49 +107,46 @@ USAGE
     try:
         # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
-        parser.add_argument("-b", "--binsize", help="bin size for SPD file index [Default: 1]", default=1, type=float)
-        parser.add_argument("-m", "--xml", help="metrix XML file")
         parser.add_argument(dest="infile", help="input file", metavar="in", nargs='+')
-        parser.add_argument("-o", "--output", dest='output', help="path to output files [default: %(default)s]", metavar="Path")
-        # parser.add_argument(dest="outpath", help="Path to output files [default: %(default)s]", metavar="out")
-        parser.add_argument(dest="temp", help="path to temporal folder [default: %(default)s]",     metavar="path")
-        # parser.add_argument("-f", "--filter", dest="filter", help="Filter type [default:  %(default)s]", default="MCC", choices=["MCC", "PMF"])
+        parser.add_argument("-o", "--output", dest='output', help="path to output files [Default: %(default)s]", metavar="Path")
+        parser.add_argument("-t", "--temppath", dest="temppath", help="path to temporal folder [Default: %(default)s]", metavar="TEMPPATH")
+        parser.add_argument("-m", "--xml", help="metrix XML file")
+        parser.add_argument("-b", "--binsize", help="Bin size for SPD file index [Default: %(default)d]", default=10, type=int)
+        parser.add_argument("-r", "--resolution", help="Pixel size for output image [Default: %(default)3.1f]. \
+            Note 0 will use the native SPD file bin size", default=1.0, type=float)
+        parser.add_argument("-u", "--upd", action="store_true", help="input file is a UPD file (unsorted SPD)")
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
-        # parser.add_argument("-M", "--mosaic", help="Mosaic the images together at the end")
-        parser.add_argument("-U", "--upd", action="store_true", help="input file is a UPD file (unsorted SPD)")
-        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]", default=0)
+        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [Default: %(default)s]", default=0)
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
         
         # Process arguments
         args = parser.parse_args()
 
-        # paths = args.paths
-        verbose = args.verbose
-        las = args.las
-        # mosaic = args.mosaic
-        upd = args.upd
-        binsize = args.binsize
         inFiles = args.infile
-        inXML = args.xml
         output = args.output
-        temp = args.temp
-        # filterAlg = args.filter
+        temp = args.temppath
+        inXML = args.xml
+        binsize = args.binsize
+        res = args.resolution
+        upd = args.upd
+        las = args.las
+        verbose = args.verbose
 
         if output is None:
             print "{0}: Please, supply a valid path".format(program_name.split('.')[0])
             print ""
             print parser.print_help()
             return 2
-        elif not os.path.isdir(output):
+        if not os.path.exists(output):
             os.mkdir(output)
 
         outPath = os.path.relpath(output)
         dtmPath = os.path.join(outPath,"DTM")
         dsmPath = os.path.join(outPath,"DSM")
         chmPath = os.path.join(outPath,"CHM")
-        os.mkdir(dtmPath)
-        os.mkdir(dsmPath)
-        os.mkdir(chmPath)
+        if not os.path.exists(dtmPath): os.mkdir(dtmPath)
+        if not os.path.exists(dsmPath): os.mkdir(dsmPath)
+        if not os.path.exists(chmPath): os.mkdir(chmPath)
 
         for inFile in inFiles:
             inputPath, inputName = os.path.split(os.path.realpath(inFile))
@@ -157,14 +154,14 @@ USAGE
             inSPD = inFile
 
 
-            outPathName = os.path.join(outPath, baseName)
-            print "Processing %s file..." % baseName
+            outPathName = os.path.join(outPath, baseName) + "_{0}m".format(binsize)
+            print "Processing {0} file...".format(baseName)
 
             if las:
                 inLAS = inSPD
                 outSPD = outPathName + ".spd"
                 inSPD = outSPD
-                commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (binsize, inLAS, outSPD)
+                commandline = 'spdtranslate --if LAS --of SPD -x LAST_RETURN -b {0} -i {1} -o {2}'.format(binsize, inLAS, outSPD)
                 if temp is not None: commandline += '--temppath {0}'.format(temp)
                 runCommand(verbose, commandline)
 
@@ -172,57 +169,56 @@ USAGE
                 inUPD = inSPD
                 outSPD = outPathName + ".spd"
                 inSPD = outSPD
-                commandline = 'spdtranslate --if SPD --of SPD -x LAST_RETURN -b %d -i %s -o %s' % (10, inUPD, outSPD)
-                if temp is not None: commandline += '--temppath {0}'.format(temp)
+                commandline = 'spdtranslate --if SPD --of SPD -x LAST_RETURN -b {0} -i {1} -o {2}'.format(binsize, inUPD, outSPD)
+                if temp is not None: commandline += ' --temppath {0}'.format(temp)
                 runCommand(verbose, commandline)
 
             # Create DSM
-            outDSM = os.path.join(dtmPath, baseName) + "_DSM.img"
-            commandline = 'spdinterp -r 50 -c 50 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inSPD, outDSM)
+            outDSM = os.path.join(dsmPath, baseName) + "_DSM.tif"
+            commandline = 'spdinterp -r 50 -c 50 --dsm --topo -f GTiff --in NATURAL_NEIGHBOR -b {0} -i {1} -o {2}'.format(res, inSPD, outDSM)
             runCommand(verbose, commandline)
 
             # Classify Ground
             inGrd = inSPD
             outGrd = outPathName + "_pmfgrd.spd"
-            # spdFilter = 'spdmccgrd'
-            # if filterAlg=="PMF": spdFilter = 'spdpmfgrd'
-            commandline = 'spdpmfgrd -i {0} -o {1} --grd 1'.format(inGrd, outGrd)
+            commandline = 'spdpmfgrd -i {0} -o {1} --grd 1 -b 1'.format(inGrd, outGrd)
             runCommand(verbose, commandline)
 
             inGrd = outGrd
             outGrd = outPathName + "_mccgrd.spd"
-            commandline = 'spdmccgrd -i {0} -o {1} --class 3'.format(inGrd, outGrd)
+            commandline = 'spdmccgrd -i {0} -o {1} --class 3 -b 1'.format(inGrd, outGrd)
             runCommand(verbose, commandline)
 
             # Create DTM
             inDTM = outGrd
-            outDTM = os.path.join(dsmPath, baseName) + "_DTM.img"
-            commandline = 'spdinterp -r 50 -c 50 --dtm --topo -f ENVI --in NATURAL_NEIGHBOR -b %d -i %s -o %s' % (binsize, inDTM, outDTM)
+            outDTM = os.path.join(dtmPath, baseName) + "_DTM.tif"
+            commandline = 'spdinterp -r 50 -c 50 --dtm --topo -f GTiff --in NATURAL_NEIGHBOR -b {0} -i {1} -o {2}'.format(res, inDTM, outDTM)
             runCommand(verbose, commandline)
 
             # Define Height
             inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
-            commandline = 'spddefheight --interp -r 50 -c 50 --overlap 10 -i %s -o %s' % (inDefHeight, outDefHeight)
+            commandline = 'spddefheight --interp -r 50 -c 50 --overlap 10 -i {0} -o {1}'.format(inDefHeight, outDefHeight)
             runCommand(verbose, commandline)
 
             # Create CHM
             inCHM = outDefHeight
-            outCHM = os.path.join(chmPath, baseName) + "_CHM.img"
-            commandline = 'spdinterp -r 50 -c 50 --dsm --height -f ENVI -b %d -i %s -o %s' % (binsize, inCHM, outCHM)
+            outCHM = os.path.join(chmPath, baseName) + "_CHM.tif"
+            commandline = 'spdinterp -r 50 -c 50 --dsm --height -f GTiff -b {0} -i {1} -o {2}'.format(res, inCHM, outCHM)
             runCommand(verbose, commandline)
 
             # Derive Metrics
             if inXML:
                 inMetrics = outDefHeight
-                outMetrics = outPathName + "_metrics.img"
-                commandline = 'spdmetrics --image -f ENVI -r 50 -c 50 -m %s -i %s -o %s' % (inXML, inMetrics, outMetrics)
+                outMetrics = outPathName + "_metrics.tif"
+                commandline = 'spdmetrics --image -f GTiff -r 50 -c 50 -m {0} -i {1} -o {2}'.format(inXML, inMetrics, outMetrics)
                 runCommand(verbose, commandline)
 
-            print "[DONE]"
+            os.remove(inGrd)        # pmfgrd.spd
+            os.remove(outGrd)       # mccgrd.spd
+            os.remove(outSPD)       # basename
 
-        # if mosaic:
-        #     commandline = 'spdtileimg --mosaic -i {1000m_tiles_DTM.lst} -t {tiles.xml} -o {1000m_DTM} -f ENVI'.format()
+            print "[DONE]"
 
         return 0
     except KeyboardInterrupt:
