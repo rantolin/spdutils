@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # encoding: utf-8
 '''
-spdshp -- Create a shape file from a tiling definition 
+spdshp -- Creates a shape file from a tiling definition 
 
 @author:     Roberto Antolín
 
@@ -14,7 +14,7 @@ spdshp -- Create a shape file from a tiling definition
 '''
 import shapefile as shp
 import xml.etree.ElementTree as ET
-import sys, os, subprocess, shutil
+import sys, os, shutil
 
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
@@ -68,7 +68,7 @@ USAGE
 ''' % (program_shortdesc, str(__date__))
 
     try:
-    	# Setup argument parser
+        # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument(dest='infile', help='input file', metavar='in')
         parser.add_argument(dest='outfile', help='output file', metavar='out')
@@ -84,22 +84,22 @@ USAGE
         root = tree.getroot()
         count = 0
         w = shp.Writer(shp.POLYGON)
-        w.field('FIRST_FLD','C','40')
-        # w.record('First','Polygon')
-        # w.field('SECOND_FLD','C','40')
+        w.field('ID','C','40')
+        w.field('ROW', 'C', '40')
+        w.field('COL', 'C', '40')
         for child in root:
-        	count += 1
-        	xmax = float(child.attrib['corexmax'])
-        	ymax = float(child.attrib['coreymax'])
-        	xmin = float(child.attrib['corexmin'])
-        	ymin = float(child.attrib['coreymin'])
-        	w.poly(parts=[[[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax],[xmin,ymin]]])
-        	w.record(str(count))
+            count += 1
+            xmax = float(child.attrib['corexmax'])
+            ymax = float(child.attrib['coreymax'])
+            xmin = float(child.attrib['corexmin'])
+            ymin = float(child.attrib['coreymin'])
+            w.poly(parts=[[[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax],[xmin,ymin]]])
+            w.record(str(count), child.attrib['row'], child.attrib['col'])
 
         w.save(outfile)
         if projection is not None: # create the PRJ file
-        	shutil.copyfile(projection, "{0}.prj".format(outfile))
-	        return 0
+            shutil.copyfile(projection, "{0}.prj".format(outfile))
+            return 0
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 0
