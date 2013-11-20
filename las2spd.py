@@ -199,7 +199,6 @@ USAGE
             commands.append(outSPD)
             commandline = " ".join(commands)
             print commandline
-            #commandline = 'spdinterp -r 100 -c 100 --dsm --topo -f ENVI --in NATURAL_NEIGHBOR -b %f -i %s -o %s' % (binsize, inLAS, outSPD)
             t = runCommand(verbose, commandline)
             #runCommand(verbose, commands)
 

@@ -137,8 +137,7 @@ USAGE
             print ""
             print parser.print_help()
             return 2
-        if not os.path.exists(output):
-            os.mkdir(output)
+        if not os.path.exists(output): os.mkdir(output)
 
         outPath = os.path.relpath(output)
         dtmPath = os.path.join(outPath,"DTM")
@@ -153,9 +152,8 @@ USAGE
             baseName = inputName.split('.')[0]
             inSPD = inFile
 
-
             outPathName = os.path.join(outPath, baseName) + "_{0}m".format(binsize)
-            print "Processing {0} file...".format(baseName)
+            print "Processing file {0} ...".format(baseName)
 
             if las:
                 inLAS = inSPD
@@ -216,7 +214,7 @@ USAGE
 
             os.remove(inGrd)        # pmfgrd.spd
             os.remove(outGrd)       # mccgrd.spd
-            os.remove(outSPD)       # basename
+            # os.remove(outSPD)       # basename
 
             print "[DONE]"
 
