@@ -44,7 +44,10 @@ class CLIError(Exception):
 
 
 def runCommand(verb, cmd):
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
+    proc = subprocess.Popen(cmd, shell=True, \
+        stdout=subprocess.PIPE, \
+        stderr=subprocess.STDOUT, \
+        universal_newlines=False)
     if verb == 2:
         for line in iter(proc.stdout.readline, ''):
             line = line.replace('\r', '').replace('\n', '')
@@ -87,7 +90,7 @@ USAGE
     try:
         # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
-        parser.add_argument(dest="infile", help="input file", metavar="in", nargs='+')
+        parser.add_argument(dest='infile', help='input file', metavar='in', nargs='*')
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
         
         # Process arguments
@@ -95,27 +98,37 @@ USAGE
 
         inFiles = args.infile
         
-        tempfileList = tempfile.mktemp()
-        fileList = open(tempfileList, 'w')
-        for inFile in inFiles:
-            fileList.write(inFile + '\n')
-        fileList.close()
+        tempDir = tempfile.mkdtemp()
 
-        fileExtent = tempfile.mktemp()
+        if os.path.basename(inFiles[0]).split('.')[1] == 'lst':
+            fileList = inFiles[0]
+        else:
+            fList, fileList = tempfile.mkstemp(suffix='.lst', dir=tempDir, text=True)
+            fList = open(fileList, 'w')
+            for inFile in inFiles:
+                fList.write(inFile + '\n')
+            fList.close()
 
-        extentcommand = 'spddeftiles --extent -i {0} > {1}'.format(tempfileList, fileExtent)
-        subprocess.Popen(extentcommand, shell=True, \
+        fileExtent, tempfileExtent = tempfile.mkstemp(suffix='.ext', dir=tempDir, text=True)
+
+        extentcommand = 'spddeftiles --extent -i {0} > {1}'.format(fileList, tempfileExtent)
+        proc = subprocess.Popen(extentcommand, shell=True, \
             stdout=subprocess.PIPE, stdin=subprocess.PIPE, \
             stderr=subprocess.STDOUT, universal_newlines=False)
 
-        fileExtent = open(fileExtent, 'r')
-        extent = fileExtent.readlines()[-2][:-1]
+        proc.wait()
+
+        fileExtent = open(tempfileExtent, 'r')
+        extent = fileExtent.readlines()[-2][34:-2]
         fileExtent.close()
+        extent = extent.split(', ')
         xmin = extent[0]
         xmax = extent[1]
         ymin = extent[2]
         ymax = extent[3]
-        print xmin, xmax, ymin, ymax
+
+        print '--xmin {0:.2f} --xmax {1:.2f} --ymin {2:.2f} --ymax {3:.2f}' \
+            .format(float(xmin), float(xmax), float(ymin), float(ymax))
 
         return 0
     except KeyboardInterrupt:
