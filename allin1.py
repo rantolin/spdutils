@@ -116,9 +116,10 @@ USAGE
             Note 0 will use the native SPD file bin size", default=1.0, type=float)
         parser.add_argument("-u", "--upd", action="store_true", help="input file is a UPD file (unsorted SPD)")
         parser.add_argument("-L", "--las", action="store_true", help="input file is a LAS file")
+        parser.add_argument("-d", "--delete", action="store_true", help='Delete auxiliar files')
         parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [Default: %(default)s]", default=0)
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
-        
+
         # Process arguments
         args = parser.parse_args()
 
@@ -131,6 +132,7 @@ USAGE
         upd = args.upd
         las = args.las
         verbose = args.verbose
+        delete = args.delete
 
         if output is None:
             print "{0}: Please, supply a valid path".format(program_name.split('.')[0])
@@ -212,9 +214,13 @@ USAGE
                 commandline = 'spdmetrics --image -f GTiff -r 50 -c 50 -m {0} -i {1} -o {2}'.format(inXML, inMetrics, outMetrics)
                 runCommand(verbose, commandline)
 
-            os.remove(inGrd)        # pmfgrd.spd
-            os.remove(outGrd)       # mccgrd.spd
-            # os.remove(outSPD)       # basename
+            if delete:
+                print "Tiding up..."
+                os.remove(inGrd)        # pmfgrd.spd
+                if verbose > 2: print "{0} has been removed".format(inGrd)
+                os.remove(outGrd)       # mccgrd.spd
+                if verbose > 2: print "{0} has been removed".format(outGrd)
+                # os.remove(outSPD)       # basename
 
             print "[DONE]"
 
