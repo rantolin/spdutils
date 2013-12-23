@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # encoding: utf-8
 '''
-help2rst -- 
+help2rst --
 
 @author:     Roberto Antolín
 
@@ -93,7 +93,7 @@ def writeFile(inputName, proc):
                     f.write('``{0}``'.format(line[line.find(inputName):]) + '\n')
             else:
                 f.write(line + '\n')
-            if nextLine.find('-- OR --') >= 0: 
+            if nextLine.find('-- OR --') >= 0:
                 f.write('\n'+'**-- or --**'+'\n')
             line=''
         else:
@@ -150,9 +150,8 @@ USAGE
 
         for inFile in inFiles:
             inputPath, inputName = os.path.split(os.path.realpath(inFile))
-            inSPD = inFile
             baseName = inputName.split('.')[0]
-            cmd = '{0} --help'.format(inFile) 
+            cmd = '{0} --help'.format(inFile)
             proc = subprocess.Popen(cmd, shell=True, \
                 stdout=subprocess.PIPE, \
                 stderr=subprocess.STDOUT, \
