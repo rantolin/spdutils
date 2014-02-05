@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # encoding: utf-8
 '''
-spdextent -- ThermoLiDAR whole workflow
+spdextent -- Get the extent of a spd file
 
 @author:     Roberto Antolín
 
