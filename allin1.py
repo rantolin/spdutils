@@ -49,7 +49,6 @@ DEBUG = 0
 TESTRUN = 0
 PROFILE = 0
 
-
 class CLIError(Exception):
     '''Generic exception to raise and log different fatal errors.'''
     def __init__(self, msg):
@@ -181,12 +180,12 @@ USAGE
             # Classify Ground
             inGrd = inSPD
             outGrd = outPathName + "_pmfgrd.spd"
-            commandline = 'spdpmfgrd -i {0} -o {1} --grd 1 -b 1'.format(inGrd, outGrd)
+            commandline = 'spdpmfgrd -i {0} -o {1} --grd 1 -b {2}'.format(inGrd, outGrd, binsize)
             runCommand(verbose, commandline)
 
             inGrd = outGrd
             outGrd = outPathName + "_mccgrd.spd"
-            commandline = 'spdmccgrd -i {0} -o {1} --class 3 -b 1'.format(inGrd, outGrd)
+            commandline = 'spdmccgrd -i {0} -o {1} --class 3 -b {2}'.format(inGrd, outGrd, binsize)
             runCommand(verbose, commandline)
 
             # Create DTM
@@ -198,7 +197,7 @@ USAGE
             # Define Height
             inDefHeight = outGrd
             outDefHeight = outPathName + "_height.spd"
-            commandline = 'spddefheight --interp -r 50 -c 50 --overlap 10 -i {0} -o {1}'.format(inDefHeight, outDefHeight)
+            commandline = 'spddefheight --interp -r 50 -c 50 --overlap 10 -i {0} -o {1} -b {2}'.format(inDefHeight, outDefHeight, binsize)
             runCommand(verbose, commandline)
 
             # Create CHM
