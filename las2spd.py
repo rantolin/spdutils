@@ -13,7 +13,7 @@ las2spd -- Translate LAS files into SPD
 @deffield    updated: Updated
 '''
 
-import sys, os
+import sys, os, shutil
 import subprocess
 import time
 
@@ -160,7 +160,7 @@ USAGE
             commands.append('--binsize')
             commands.append(str(binsize))
             # LAS in SPD out
-            commands.append('--if LAS --of SPD')
+            commands.append('--if LASNP --of SPD')
 
             if not os.path.isfile(inFile):
                 print "%s: %s is not a valid file" % (program_name.split('.')[0], inFile)
@@ -175,6 +175,8 @@ USAGE
             # Files grater than 60Mb will be translated by blocks in --temppath
             size = float(os.path.getsize(inLAS)) / 1048576.  # 1048576 bytes = 1 Mb
             if size > 60.0:
+                tempPath = os.path.join(tempPath, os.path.basename(inFile).split('.')[0]) + '/'
+                if not os.path.exists(tempPath): os.makedirs(tempPath)
                 commands.append('--temppath')
                 commands.append(tempPath)
 
@@ -204,6 +206,8 @@ USAGE
 
             outStr = '{0} {1:.1f} {2:10.6f}\n'.format(baseName, size, t)
             fout.write(outStr)
+
+            shutil.rmtree(tempPath)
 
             print "[DONE]"
 
