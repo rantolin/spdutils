@@ -1,0 +1,1 @@
+spdtranslate --if LAS --of SPD -x FIRST_RETURN -i $FILEPATH -o $PATH/$FILENAME.spd

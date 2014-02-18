@@ -1,0 +1,1 @@
+spdinterp --chm --height -b 1 -i $FILEPATH -o $PATH/$FILENAME.kea
