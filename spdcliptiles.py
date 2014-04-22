@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # encoding: utf-8
 '''
-las2spd -- Clip tiles generated with SPDlib
+spdcliptiles -- Clip tiles generated with SPDlib
 
 @author:     Roberto Antolín
 
@@ -19,12 +19,14 @@ import xml.etree.ElementTree as ET
 
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
+from argparse import RawTextHelpFormatter
+from argparse import ArgumentDefaultsHelpFormatter
 
 
 __all__ = []
 __version__ = 0.1
 __date__ = '2014-04-08'
-__updated__ = '2014-04-08'
+__updated__ = '2014-04-22'
 
 DEBUG = 0
 TESTRUN = 0
@@ -69,6 +71,14 @@ def main(argv=None):    # IGNORE:C0111
   or conditions of any kind, either express or implied.
 
 USAGE
+
+Clips tiles within the input path to their nominal extent 
+according to the definition given by SPD xml files. Output 
+tiles are recorded in the output path.
+
+Files must be named as rowXXcolXX.spd, otherwise it will not work. 
+
+Core extent is available with the '-c' argument.
 ''' % (program_shortdesc, str(__date__))
 
     try:
@@ -81,7 +91,7 @@ USAGE
         parser.add_argument("-o", "--output", help="path to output files", metavar="PATH", required=True)
         parser.add_argument("-c", "--core", help='Clip tiles to their core extent', action='store_true')
         parser.add_argument("-p", "--proj", help='Projection information in GDAL format [default: %(default)s]', default='EPSG:27700')
-        parser.add_argument("-f", "--format", help='Format of the input tiles [default: %(default)s]', default='kea')
+        parser.add_argument("-f", "--format", help='Format of the input tiles [default: %(default)s]', default='tif')
         # parser.add_argument("-s", "--string", help='String format for tiles name [default: %(default)s]', default='500m_rowXXcolXX_10m_pmfgrd_mccgrd_height')
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
 
@@ -95,11 +105,6 @@ USAGE
         proj = args.proj
         format = args.format
 
-        # xmlFile = '/media/DATA/Aberfoyle/Survey_2012/SPD/Aberfoyle_500m_tiles/Aberfoyle_500m_tiles.xml'
-        # inDir = '/media/Elements/Aberfoyle_2012/Chloe/processed/classified/chm/'
-        # outDir = '/media/DATA/Aberfoyle/Survey_2012/chloe/chm/'
-        # inDir = '/media/Elements/AberfoycdSurvey_2012/chloe/dtm/'
-
         tree = ET.parse(xmlFile)
         root = tree.getroot()
 
@@ -111,14 +116,14 @@ USAGE
         for child in root:
             row = int(child.attrib['row'])
             col = int(child.attrib['col'])
-            finput = inDir + '500m_row{0}col{1}_10m_pmfgrd_mccgrd_height.{2}'.format(row, col, format)
+            finput = inDir + 'row{0}col{1}.{2}'.format(row, col, format)
             if os.path.isfile(finput):
-                foutput = outDir + '500m_row{0}col{1}_10m.{2}'.format(row, col, format)
+                foutput = outDir + 'row{0}col{1}.{2}'.format(row, col, format)
                 print "Processing {}...".format(foutput)
-                xmin = int(child.attrib[coreString+'xmin'])
-                xmax = int(child.attrib[coreString+'xmax'])
-                ymin = int(child.attrib[coreString+'ymin'])
-                ymax = int(child.attrib[coreString+'ymax'])
+                xmin = int(child.attrib[coreString+'xmin'])-1   # Extend 1m the boundaries of the core tile
+                xmax = int(child.attrib[coreString+'xmax'])+1
+                ymin = int(child.attrib[coreString+'ymin'])-1
+                ymax = int(child.attrib[coreString+'ymax'])+1
                 gdal = 'gdal_translate -projwin {0} {1} {2} {3} {4} {5} -a_srs {6}'.format(xmin, ymax, xmax, ymin, finput, foutput, proj)
                 proc = subprocess.Popen(gdal, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
                 proc.wait()

@@ -5,7 +5,7 @@ las2spd -- Translate LAS files into SPD
 
 @author:     Roberto Antolín
 
-@copyright:  2013 Roberto Antolín. All rights reserved.
+@copyright:  2014 Roberto Antolín. All rights reserved.
 
 @license:    license
 
@@ -22,8 +22,8 @@ from argparse import RawDescriptionHelpFormatter
 
 __all__ = []
 __version__ = 0.1
-__date__ = '2013-10-07'
-__updated__ = '2013-11-05'
+__date__ = '2014-03-08'
+__updated__ = '2014-03-08'
 
 DEBUG = 0
 TESTRUN = 0
