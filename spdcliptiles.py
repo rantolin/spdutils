@@ -19,8 +19,6 @@ import xml.etree.ElementTree as ET
 
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
-from argparse import RawTextHelpFormatter
-from argparse import ArgumentDefaultsHelpFormatter
 
 
 __all__ = []
@@ -62,7 +60,7 @@ def main(argv=None):    # IGNORE:C0111
     program_license = '''%s
 
   Created by rantolin on %s.
-  Copyright 2013 organization_name. All rights reserved.
+  Copyright 2014 NRS. All rights reserved.
 
   Licensed under the Apache License 2.0
   http://www.apache.org/licenses/LICENSE-2.0
