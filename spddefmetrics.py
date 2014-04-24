@@ -23,24 +23,9 @@ __date__ = '2014-02-06'
 __updated__ = '2014-02-06'
 __author__ = 'Roberto Antolin'
 
-
 DEBUG = 0
 TESTRUN = 0
 PROFILE = 0
-
-# Height percentiles
-pH99 = {'metric':"percentileheight", 'field':"99thPerH", 'percentile':"99", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH95 = {'metric':"percentileheight", 'field':"95thPerH", 'percentile':"95", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH90 = {'metric':"percentileheight", 'field':"90thPerH", 'percentile':"90", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH80 = {'metric':"percentileheight", 'field':"80thPerH", 'percentile':"80", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH70 = {'metric':"percentileheight", 'field':"70thPerH", 'percentile':"70", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH60 = {'metric':"percentileheight", 'field':"60thPerH", 'percentile':"60", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH50 = {'metric':"percentileheight", 'field':"50thPerH", 'percentile':"50", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH40 = {'metric':"percentileheight", 'field':"40thPerH", 'percentile':"40", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH30 = {'metric':"percentileheight", 'field':"30thPerH", 'percentile':"30", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH20 = {'metric':"percentileheight", 'field':"20thPerH", 'percentile':"20", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
-pH10 = {'metric':"hscoi", 'field':"hscoi", 'percentile':"10", 'return':"First", 'class':"NotGrd", 'lowthreshold':"0.1"}
-hcoi = {'metric':"percentileheight", 'field':"10thPerH", 'return':"All", 'class':"NotGrd", 'lowthreshold':"2", 'vres':"0.5"}
 
 # General statistics
 numReturnsAll = {'metric':"numreturnsheight", 'field':"numReturnsAll", 'return':"All", 'class':"All", 'lowthreshold':"2", 'vres':"0.5"}
@@ -67,6 +52,20 @@ dominantHeight = {'metric':"dominantheight", 'field':"dominantH", 'return':"All"
 canopycoverHeight = {'metric':"canopycoverheight", 'field':"canopycoverH", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.0"}
 kurtosisHeight = {'metric':"kurtosisheight", 'field':"kurtosis", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.0"}
 skewnessHeight = {'metric':"skewnessheight", 'field':"skewness", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.0"}
+
+# Height percentiles
+pH99 = {'metric':"percentileheight", 'field':"99thPerH", 'percentile':"99", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH95 = {'metric':"percentileheight", 'field':"95thPerH", 'percentile':"95", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH90 = {'metric':"percentileheight", 'field':"90thPerH", 'percentile':"90", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH80 = {'metric':"percentileheight", 'field':"80thPerH", 'percentile':"80", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH70 = {'metric':"percentileheight", 'field':"70thPerH", 'percentile':"70", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH60 = {'metric':"percentileheight", 'field':"60thPerH", 'percentile':"60", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH50 = {'metric':"percentileheight", 'field':"50thPerH", 'percentile':"50", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH40 = {'metric':"percentileheight", 'field':"40thPerH", 'percentile':"40", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH30 = {'metric':"percentileheight", 'field':"30thPerH", 'percentile':"30", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH20 = {'metric':"percentileheight", 'field':"20thPerH", 'percentile':"20", 'return':"All", 'class':"NotGrd", 'lowthreshold':"0.1"}
+pH10 = {'metric':"hscoi", 'field':"hscoi", 'percentile':"10", 'return':"First", 'class':"NotGrd", 'lowthreshold':"0.1"}
+hcoi = {'metric':"percentileheight", 'field':"10thPerH", 'return':"All", 'class':"NotGrd", 'lowthreshold':"2", 'vres':"0.5"}
 
 metric_choices = ['ALL', 'pH99', 'pH95', 'pH90', 'pH80', 'pH70', 'pH60', 'pH50', 'pH40', 'pH30', 'pH20', 'pH10',\
     'numReturnsAll', 'numReturnsNotGround', 'numReturnsGround', 'numReturns1', 'numReturns2',\
@@ -116,7 +115,7 @@ def getXmlString(metric):
     return xmlString
 
 
-def addmetric(metricsList, metric):
+def addMetric(metricsList, metric):
     if metric == 'pH99': metricsList.append(pH99); return
     if metric == 'pH95': metricsList.append(pH95); return
     if metric == 'pH90': metricsList.append(pH90); return
@@ -185,7 +184,7 @@ USAGE
         # Setup argument parser
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument('-m', '--metric', dest='metric', help='Metrics: %(choices)s', metavar='metric', choices=metric_choices, nargs='+', required=True)
-        parser.add_argument('-o', '--output', dest='output', help='File of the xml output', metavar='OUTPUT') #, required=True)
+        parser.add_argument('-o', '--output', dest='output', help='File of the xml output', metavar='OUTPUT')
         # parser.add_argument('-A', '--all', action="store_true", help="Compute all the metrics")
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
 
@@ -206,7 +205,7 @@ USAGE
         else:
             metricsList = []
             for metric in metrics:
-                addmetric(metricsList, metric)
+                addMetric(metricsList, metric)
 
         if output is None:
             print "{0}: Please, provide a output name".format(program_name.split('.')[0])
