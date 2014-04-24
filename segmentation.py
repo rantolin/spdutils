@@ -22,6 +22,10 @@ from rsgislib.segmentation import segutils
 import rsgislib.segmentation
 import rsgislib.rastergis
 
+# Import gdal
+import gdal
+from gdalconst import *
+
 
 
 __all__ = []
@@ -151,16 +155,19 @@ Segmentates a raster image based in LiDAR height metrics
 
         ############# Populate the Segments with Stats #################
         
-        # TODO: Change bandStats to fit number of bands of input
-
-
         bandStats = []
+        try:
+            src_ds = gdal.Open(inputImage, GA_ReadOnly)
+        except RuntimeError, e:
+            print 'Unable to open {0}'.format(inputImage)
+            print e
+            sys.exit(1)
 
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=1, meanField='GapFractionMean', stdDevField='GapFractionStdDev'))
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=2, meanField='CCPercentMean', stdDevField='CCPercentStdDev'))
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=3, meanField='HSCOIMean', stdDevField='HSCOIStdDev'))
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=4, meanField='95thPerHMean', stdDevField='95thPerHStdDev'))
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=5, meanField='50thPerHMean', stdDevField='50thPerHStdDev'))
+        for band in range( src_ds.RasterCount ):
+            band += 1
+            srcband = src_ds.GetRasterBand(band)
+            bandName = srcband.GetDescription()
+            bandStats.append(rsgislib.rastergis.BandAttStats(band=band, meanField=bandName+'Mean', stdDevField=bandName+'StdDev'))
 
         # Run the RSGISLib command with the input parameters.
         rsgislib.rastergis.populateRATWithStats(inputImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
