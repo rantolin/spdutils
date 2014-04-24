@@ -185,8 +185,7 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument('-m', '--metric', dest='metric', help='Metrics: %(choices)s', metavar='metric', choices=metric_choices, nargs='+', required=True)
         parser.add_argument('-o', '--output', dest='output', help='File of the xml output', metavar='OUTPUT')
-        # parser.add_argument('-A', '--all', action="store_true", help="Compute all the metrics")
-        parser.add_argument("-V", "--version", action="version", version=program_version_message)
+        parser.add_argument('-V', '--version', action='version', version=program_version_message)
 
         # Process arguments
         args = parser.parse_args()
@@ -194,7 +193,6 @@ USAGE
         # inFiles = args.infile
         metrics = args.metric
         output = args.output
-        # allm = args.all
 
         if 'ALL' in metrics:
             metricsList = [pH99, pH95, pH90, pH80, pH70, pH60, pH50, pH40, pH30, pH20, pH10,\
