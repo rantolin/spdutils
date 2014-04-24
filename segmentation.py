@@ -14,9 +14,6 @@ segmentation -- Segmentates a raster image based in LiDAR height metrics
 '''
 
 import sys, os
-import subprocess
-import xml.etree.ElementTree as ET
-
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
@@ -30,7 +27,7 @@ import rsgislib.rastergis
 __all__ = []
 __version__ = 0.1
 __date__ = '2014-04-23'
-__updated__ = '2014-04-23'
+__updated__ = '2014-04-24'
 
 DEBUG = 0
 TESTRUN = 0
@@ -83,14 +80,14 @@ Segmentates a raster image based in LiDAR height metrics
         # Setup argument parser
 
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
-        parser.add_argument("-i", "--input", help="The input image for the segmentation", metavar="raster", required=True)
-        parser.add_argument("-c", "--clumps", help="The output segments (clumps) image", metavar="raster", required=True)
-        parser.add_argument("-o", "--output", help="The output clump means image (for visualsation)", metavar="raster", required=True)
-        parser.add_argument("-n", "--numclusters", help="The number of clusters (k) in the KMeans [default: %(default)s]", default=8)
-        parser.add_argument("-m", "--min_size", help="The minimum object size in pixels. [default: %(default)s]", default=50)
-        parser.add_argument("-d", "--distance", help="The distance threshold to prevent merging. This has been set to an arbitrarily large number to disable this function [default: %(default)s]", default=1000000)
-        parser.add_argument("-s", "--sampling", help="The sampling of the input image for KMeans (every 10th pixel). [default: %(default)s]", default=10)
-        parser.add_argument("-I", "--iterations", help="Max. number of iterations for the KMeans.. [default: %(default)s]", default=200)
+        parser.add_argument("input", help="The input image for the segmentation", metavar='file')
+        parser.add_argument("-o", "--output", help="The output clump means image (for visualsation)", metavar="file", required=True)
+        parser.add_argument("-t", "--thermal", help="Thermal image to populate the Segments with Stats", metavar="file")
+        parser.add_argument("-n", "--numclusters", help="The number of clusters (k) in the KMeans [default: %(default)s]", metavar='int', default=8, type=int)
+        parser.add_argument("-m", "--min_size", help="The minimum object size in pixels. [default: %(default)s]", metavar='int', default=50, type=int)
+        parser.add_argument("-d", "--distance", help="The distance threshold to prevent merging. This has been set to an arbitrarily large number to disable this function [default: %(default)s]", metavar='float', default=1000000, type=float)
+        parser.add_argument("-s", "--sampling", help="The sampling of the input image for KMeans (every 10th pixel). [default: %(default)s]", metavar='float', default=10, type=float)
+        parser.add_argument("-I", "--iterations", help="Max. number of iterations for the KMeans. [default: %(default)s]", metavar='int', default=200, type=int)
 
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
 
@@ -98,60 +95,65 @@ Segmentates a raster image based in LiDAR height metrics
         args = parser.parse_args()
 
         inputImage = args.input
-        segmentClumps = args.clumps
+        # segmentClumps = args.clumps
         outputMeanSegments = args.output
-        numClusters = args.numClusters
+        numClusters = args.numclusters
+        thermalInImage = args.thermal
         minObjectSize = args.min_size
         distThres = args.distance
         sampling = args.sampling
         kmMaxIter = args.iterations
 
-        ##################### Perform Segmentation #####################
-        # The input image for the segmentation
-        inputImage = "500m_row13col16_10m_metrics.kea"
-        # The output segments (clumps) image
-        segmentClumps = "500m_row13col16_segs.kea"
-        # The output clump means image (for visualsation) 
-        outputMeanSegments = "500m_row13col16_meansegs.kea"
-        # A temporary path for layers generated during the
-        # segmentation process. The directory will be created
-        # and deleted during processing.
+        # Name of auxiliar files
+        baseOutput = os.path.basename(outputMeanSegments).split('.')[0]
+        segmentClumps = baseOutput + '_segs.kea'
+        inputSegmentations = [segmentClumps] #, 'Aberfoyle_SubCompartments.kea']
+        segmentClumpsWithSubCompartments = baseOutput + '_segs_sc.kea'
+        segmentClumpsWithSubCompartmentsRMSmallSegs = baseOutput + '_segs_sc_rmsmall.kea'
+        segmentClumpsWithSubCompartmentsFinal = baseOutput + '_segs_final.kea'
+
         tmpPath = "./tmp/"
-        # The number of clusters (k) in the KMeans.
-        numClusters = 8
-        # The minimum object size in pixels.
-        minObjectSize = 50
-        # The distance threshold to prevent merging.
-        # this has been set to an arbitrarily large 
-        # number to disable this function. 
-        distThres = 1000000
-        # The sampling of the input image for KMeans (every 10th pixel)
-        sampling = 10
-        # Max. number of iterations for the KMeans.
-        kmMaxIter = 200
+
+        ##################### Perform Segmentation #####################
 
         # RSGISLib function call to execute the segmentation
-        segutils.runShepherdSegmentation(inputImage, segmentClumps, outputMeanSegments, 
-                                         tmpPath, "KEA", False, False, False, numClusters, 
-                                         minObjectSize, distThres, None, sampling, kmMaxIter)
+        # Utility function to call the segmentation algorithm of Shepherd et al. (2014).
+        # Shepherd, J., Bunting, P., Dymond, J., 2013. Operational large-scale segmentation 
+        # of imagery based on iterative elimination. Journal of Applied Remote Sensing. Submitted.
+        segutils.runShepherdSegmentation(inputImage, segmentClumps, 
+                                         outputMeanImg=outputMeanSegments,
+                                         tmpath=tmpPath,
+                                         gdalFormat="KEA",
+                                         noStats=False,
+                                         noStretch=False,
+                                         noDelete=False,
+                                         numClusters=numClusters,
+                                         minPxls=minObjectSize,
+                                         distThres=distThres, 
+                                         bands=None, 
+                                         sampling=sampling, 
+                                         kmMaxIter=kmMaxIter)
         ################################################################
 
 
         ##################### Merge Segmentations #####################
-        # inputSegmentations = [segmentClumps, 'Aberfoyle_SubCompartments.kea']
-        # segmentClumpsWithSubCompartments = "500m_row13col16_segs_sc.kea"
-        # segmentClumpsWithSubCompartmentsRMSmallSegs = "500m_row13col16_segs_sc_rmsmall.kea"
-        segmentClumpsWithSubCompartmentsFinal = "500m_row13col16_segs_final.kea"
+        # Union of Clumps
+        rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, "KEA", inputSegmentations, 0)     # Output
 
-        # rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, "KEA", inputSegmentations, 0)
-        # rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartments, True, True)
-        # rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, "KEA", False, "", False, False, 5, 1000000)
-        # rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, "KEA", False)
-        # rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartmentsFinal, True, True)
+        # Populates statics for thematic images
+        rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartments, True, True)                          # Input
+
+        # eliminate clumps smaller than a given size from the scene
+        rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, "KEA", False, "", False, False, 5, 1000000)
+        rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, "KEA", False)
+        rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartmentsFinal, True, True)
         ################################################################
 
-
         ############# Populate the Segments with Stats #################
+        
+        # TODO: Change bandStats to fit number of bands of input
+
+
         bandStats = []
 
         bandStats.append(rsgislib.rastergis.BandAttStats(band=1, meanField='GapFractionMean', stdDevField='GapFractionStdDev'))
@@ -161,18 +163,16 @@ Segmentates a raster image based in LiDAR height metrics
         bandStats.append(rsgislib.rastergis.BandAttStats(band=5, meanField='50thPerHMean', stdDevField='50thPerHStdDev'))
 
         # Run the RSGISLib command with the input parameters.
-        # rsgislib.rastergis.populateRATWithStats(inputImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
+        rsgislib.rastergis.populateRATWithStats(inputImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
 
         ################################################################
 
         ############# Populate the Segments with Stats #################
-        thermalInImage = 'SouthOrtho_10m_kea.kea'
-
         bandStats = []
-        bandStats.append(rsgislib.rastergis.BandAttStats(band=1, meanField='ThermalMean', stdDevField='ThermalStdDev', minField='ThermalMin', maxField='ThermalMax'))
-
-        # Run the RSGISLib command with the input parameters.
-        rsgislib.rastergis.populateRATWithStats(thermalInImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
+        if thermalInImage:
+            bandStats.append(rsgislib.rastergis.BandAttStats(band=1, meanField='ThermalMean', stdDevField='ThermalStdDev', minField='ThermalMin', maxField='ThermalMax'))
+            # Run the RSGISLib command with the input parameters.
+            rsgislib.rastergis.populateRATWithStats(thermalInImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
         ################################################################
 
         return 0
