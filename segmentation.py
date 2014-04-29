@@ -87,7 +87,7 @@ Segmentates a raster image based in LiDAR height metrics
         parser.add_argument("input", help="The input image for the segmentation", metavar='file')
         parser.add_argument("-o", "--output", help="The output clump means image (for visualsation)", metavar="file", required=True)
         parser.add_argument("-t", "--thermal", help="Thermal image to populate the Segments with Stats", metavar="file")
-        parser.add_argument("-n", "--numclusters", help="The number of clusters (k) in the KMeans [default: %(default)s]", metavar='int', default=8, type=int)
+        parser.add_argument("-n", "--numclusters", help="The number of clusters in the KMeans [default: %(default)s]", metavar='int', default=8, type=int)
         parser.add_argument("-m", "--min_size", help="The minimum object size in pixels. [default: %(default)s]", metavar='int', default=50, type=int)
         parser.add_argument("-d", "--distance", help="The distance threshold to prevent merging. This has been set to an arbitrarily large number to disable this function [default: %(default)s]", metavar='float', default=1000000, type=float)
         parser.add_argument("-s", "--sampling", help="The sampling of the input image for KMeans (every 10th pixel). [default: %(default)s]", metavar='float', default=10, type=float)

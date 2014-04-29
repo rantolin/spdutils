@@ -74,7 +74,7 @@ Clips tiles within the input path to their nominal extent
 according to the definition given by SPD xml files. Output 
 tiles are recorded in the output path.
 
-Files must be named as rowXXcolXX.spd, otherwise it will not work. 
+Files must be named as rowXXcolXX, otherwise it will not work. 
 
 Core extent is available with the '-c' argument.
 ''' % (program_shortdesc, str(__date__))
@@ -118,10 +118,10 @@ Core extent is available with the '-c' argument.
             if os.path.isfile(finput):
                 foutput = outDir + 'row{0}col{1}.{2}'.format(row, col, format)
                 print "Processing {}...".format(foutput)
-                xmin = int(child.attrib[coreString+'xmin'])-1   # Extend 1m the boundaries of the core tile
-                xmax = int(child.attrib[coreString+'xmax'])+1
-                ymin = int(child.attrib[coreString+'ymin'])-1
-                ymax = int(child.attrib[coreString+'ymax'])+1
+                xmin = int(child.attrib[coreString+'xmin'])-10   # Extend 10m the boundaries of the core tile
+                xmax = int(child.attrib[coreString+'xmax'])+10
+                ymin = int(child.attrib[coreString+'ymin'])-10
+                ymax = int(child.attrib[coreString+'ymax'])+10
                 gdal = 'gdal_translate -projwin {0} {1} {2} {3} {4} {5} -a_srs {6}'.format(xmin, ymax, xmax, ymin, finput, foutput, proj)
                 proc = subprocess.Popen(gdal, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=False)
                 proc.wait()
