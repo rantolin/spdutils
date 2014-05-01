@@ -91,6 +91,7 @@ Segmentates a raster image based in LiDAR height metrics
         parser.add_argument("-m", "--min_size", help="The minimum object size in pixels. [default: %(default)s]", metavar='int', default=50, type=int)
         parser.add_argument("-d", "--distance", help="The distance threshold to prevent merging. This has been set to an arbitrarily large number to disable this function [default: %(default)s]", metavar='float', default=1000000, type=float)
         parser.add_argument("-s", "--sampling", help="The sampling of the input image for KMeans (every 10th pixel). [default: %(default)s]", metavar='float', default=10, type=float)
+        parser.add_argument("-of", "--format", help="The output format. [default: %(default)s]", metavar='GDAL format', default='KEA')
         parser.add_argument("-I", "--iterations", help="Max. number of iterations for the KMeans. [default: %(default)s]", metavar='int', default=200, type=int)
 
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
@@ -99,7 +100,6 @@ Segmentates a raster image based in LiDAR height metrics
         args = parser.parse_args()
 
         inputImage = args.input
-        # segmentClumps = args.clumps
         outputMeanSegments = args.output
         numClusters = args.numclusters
         thermalInImage = args.thermal
@@ -107,9 +107,12 @@ Segmentates a raster image based in LiDAR height metrics
         distThres = args.distance
         sampling = args.sampling
         kmMaxIter = args.iterations
+        outputFormat = args.format
 
         # Name of auxiliar files
-        baseOutput = os.path.basename(outputMeanSegments).split('.')[0]
+        baseName = os.path.basename(outputMeanSegments).split('.')[0]
+        baseDir = os.path.dirname(os.path.abspath(outputMeanSegments))
+        baseOutput = os.path.join(baseDir,baseName)
         segmentClumps = baseOutput + '_segs.kea'
         inputSegmentations = [segmentClumps] #, 'Aberfoyle_SubCompartments.kea']
         segmentClumpsWithSubCompartments = baseOutput + '_segs_sc.kea'
@@ -124,32 +127,32 @@ Segmentates a raster image based in LiDAR height metrics
         # Utility function to call the segmentation algorithm of Shepherd et al. (2014).
         # Shepherd, J., Bunting, P., Dymond, J., 2013. Operational large-scale segmentation 
         # of imagery based on iterative elimination. Journal of Applied Remote Sensing. Submitted.
-        segutils.runShepherdSegmentation(inputImage, segmentClumps, 
+        segutils.runShepherdSegmentation(inputImage, segmentClumps,
                                          outputMeanImg=outputMeanSegments,
                                          tmpath=tmpPath,
-                                         gdalFormat="KEA",
+                                         gdalFormat=outputFormat,
                                          noStats=False,
                                          noStretch=False,
                                          noDelete=False,
                                          numClusters=numClusters,
                                          minPxls=minObjectSize,
-                                         distThres=distThres, 
-                                         bands=None, 
-                                         sampling=sampling, 
+                                         distThres=distThres,
+                                         bands=None,
+                                         sampling=sampling,
                                          kmMaxIter=kmMaxIter)
         ################################################################
 
 
         ##################### Merge Segmentations #####################
         # Union of Clumps
-        rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, "KEA", inputSegmentations, 0)     # Output
+        rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, outputFormat, inputSegmentations, 0)     # Output
 
         # Populates statics for thematic images
         rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartments, True, True)                          # Input
 
         # eliminate clumps smaller than a given size from the scene
-        rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, "KEA", False, "", False, False, 5, 1000000)
-        rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, "KEA", False)
+        rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, outputFormat, False, "", False, False, 5, 1000000)
+        rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, outputFormat, False)
         rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartmentsFinal, True, True)
         ################################################################
 
