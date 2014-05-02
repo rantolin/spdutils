@@ -31,7 +31,7 @@ from gdalconst import *
 __all__ = []
 __version__ = 0.1
 __date__ = '2014-04-23'
-__updated__ = '2014-04-24'
+__updated__ = '2014-04-30'
 
 DEBUG = 0
 TESTRUN = 0
@@ -108,6 +108,7 @@ Segmentates a raster image based in LiDAR height metrics
         sampling = args.sampling
         kmMaxIter = args.iterations
         outputFormat = args.format
+        print outputFormat
 
         # Name of auxiliar files
         baseName = os.path.basename(outputMeanSegments).split('.')[0]
@@ -120,6 +121,7 @@ Segmentates a raster image based in LiDAR height metrics
         segmentClumpsWithSubCompartmentsFinal = baseOutput + '_segs_final.kea'
 
         tmpPath = "./tmp/"
+        print 'HOLA\n\n\n\n\n\n\n'
 
         ##################### Perform Segmentation #####################
 
@@ -130,7 +132,7 @@ Segmentates a raster image based in LiDAR height metrics
         segutils.runShepherdSegmentation(inputImage, segmentClumps,
                                          outputMeanImg=outputMeanSegments,
                                          tmpath=tmpPath,
-                                         gdalFormat=outputFormat,
+                                         gdalFormat='KEA',
                                          noStats=False,
                                          noStretch=False,
                                          noDelete=False,
@@ -145,14 +147,13 @@ Segmentates a raster image based in LiDAR height metrics
 
         ##################### Merge Segmentations #####################
         # Union of Clumps
-        rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, outputFormat, inputSegmentations, 0)     # Output
-
+        rsgislib.segmentation.UnionOfClumps(segmentClumpsWithSubCompartments, 'KEA', inputSegmentations, 0)     # Output
         # Populates statics for thematic images
         rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartments, True, True)                          # Input
 
         # eliminate clumps smaller than a given size from the scene
-        rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, outputFormat, False, "", False, False, 5, 1000000)
-        rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, outputFormat, False)
+        rsgislib.segmentation.RMSmallClumpsStepwise(inputImage, segmentClumpsWithSubCompartments, segmentClumpsWithSubCompartmentsRMSmallSegs, 'KEA', False, "", False, False, 5, 1000000)
+        rsgislib.segmentation.relabelClumps(segmentClumpsWithSubCompartmentsRMSmallSegs, segmentClumpsWithSubCompartmentsFinal, 'KEA', False)
         rsgislib.rastergis.populateStats(segmentClumpsWithSubCompartmentsFinal, True, True)
         ################################################################
 
@@ -184,6 +185,29 @@ Segmentates a raster image based in LiDAR height metrics
             # Run the RSGISLib command with the input parameters.
             rsgislib.rastergis.populateRATWithStats(thermalInImage, segmentClumpsWithSubCompartmentsFinal, bandStats)
         ################################################################
+
+        if outputFormat != 'KEA':
+            #Open output format driver, see gdal_translate --formats for list
+            driver = gdal.GetDriverByName(outputFormat)
+            src_filename = baseOutput + '_segs_final.kea'
+            dst_filename = baseOutput + '_segs_final.{0}'.format(outputFormat)
+
+            #Open existing dataset
+            src_ds = gdal.Open(src_filename)
+
+            #Output to new format
+            dst_ds = driver.CreateCopy(dst_filename, src_ds, 0)
+
+            #Properly close the datasets to flush to disk
+            dst_ds = None
+            src_ds = None
+
+            try:
+                os.remove(src_filename)
+            except OSError, e:
+                print "Warning", "{0}\nImpossible to remove auxiliar files.".format(e)
+
+
 
         return 0
 
