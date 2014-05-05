@@ -85,22 +85,22 @@ Segmentates a raster image based in LiDAR height metrics
 
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("input", help="The input image for the segmentation", metavar='file')
-        parser.add_argument("-o", "--output", help="The output clump means image (for visualsation)", metavar="file", required=True)
+        parser.add_argument("-o", "--output", help="The output base name", metavar="path", required=True)
         parser.add_argument("-t", "--thermal", help="Thermal image to populate the Segments with Stats", metavar="file")
         parser.add_argument("-n", "--numclusters", help="The number of clusters in the KMeans [default: %(default)s]", metavar='int', default=8, type=int)
         parser.add_argument("-m", "--min_size", help="The minimum object size in pixels. [default: %(default)s]", metavar='int', default=50, type=int)
         parser.add_argument("-d", "--distance", help="The distance threshold to prevent merging. This has been set to an arbitrarily large number to disable this function [default: %(default)s]", metavar='float', default=1000000, type=float)
         parser.add_argument("-s", "--sampling", help="The sampling of the input image for KMeans (every 10th pixel). [default: %(default)s]", metavar='float', default=10, type=float)
         parser.add_argument("-of", "--format", help="The output format. [default: %(default)s]", metavar='GDAL format', default='KEA')
+        parser.add_argument("-D", "--delete", help="Delete auxiliar files", action='store_true')
         parser.add_argument("-I", "--iterations", help="Max. number of iterations for the KMeans. [default: %(default)s]", metavar='int', default=200, type=int)
-
         parser.add_argument("-V", "--version", action="version", version=program_version_message)
 
         # Process arguments
         args = parser.parse_args()
 
         inputImage = args.input
-        outputMeanSegments = args.output
+        output = args.output
         numClusters = args.numclusters
         thermalInImage = args.thermal
         minObjectSize = args.min_size
@@ -108,17 +108,19 @@ Segmentates a raster image based in LiDAR height metrics
         sampling = args.sampling
         kmMaxIter = args.iterations
         outputFormat = args.format
-        print outputFormat
+        delete = args.delete
 
         # Name of auxiliar files
-        baseName = os.path.basename(outputMeanSegments).split('.')[0]
-        baseDir = os.path.dirname(os.path.abspath(outputMeanSegments))
+        baseName = os.path.basename(output).split('.')[0]
+        baseDir = os.path.dirname(os.path.abspath(output))
         baseOutput = os.path.join(baseDir,baseName)
         segmentClumps = baseOutput + '_segs.kea'
         inputSegmentations = [segmentClumps] #, 'Aberfoyle_SubCompartments.kea']
+        MeanSegments = baseOutput + '_meansegs.kea'
         segmentClumpsWithSubCompartments = baseOutput + '_segs_sc.kea'
         segmentClumpsWithSubCompartmentsRMSmallSegs = baseOutput + '_segs_sc_rmsmall.kea'
         segmentClumpsWithSubCompartmentsFinal = baseOutput + '_segs_final.kea'
+
 
         tmpPath = "./tmp/"
         print 'HOLA\n\n\n\n\n\n\n'
@@ -130,7 +132,7 @@ Segmentates a raster image based in LiDAR height metrics
         # Shepherd, J., Bunting, P., Dymond, J., 2013. Operational large-scale segmentation 
         # of imagery based on iterative elimination. Journal of Applied Remote Sensing. Submitted.
         segutils.runShepherdSegmentation(inputImage, segmentClumps,
-                                         outputMeanImg=outputMeanSegments,
+                                         outputMeanImg=MeanSegments,
                                          tmpath=tmpPath,
                                          gdalFormat='KEA',
                                          noStats=False,
@@ -189,8 +191,9 @@ Segmentates a raster image based in LiDAR height metrics
         if outputFormat != 'KEA':
             #Open output format driver, see gdal_translate --formats for list
             driver = gdal.GetDriverByName(outputFormat)
+            # outputExtension = driver.GetMetadata()['DMD_EXTENSION']
             src_filename = baseOutput + '_segs_final.kea'
-            dst_filename = baseOutput + '_segs_final.{0}'.format(outputFormat)
+            dst_filename = baseOutput + '.' + driver.GetMetadata()[DMD_EXTENSION]
 
             #Open existing dataset
             src_ds = gdal.Open(src_filename)
@@ -207,6 +210,14 @@ Segmentates a raster image based in LiDAR height metrics
             except OSError, e:
                 print "Warning", "{0}\nImpossible to remove auxiliar files.".format(e)
 
+        if delete:
+            try:
+                os.remove(segmentClumps)
+                os.remove(MeanSegments)
+                os.remove(segmentClumpsWithSubCompartments)
+                os.remove(segmentClumpsWithSubCompartmentsRMSmallSegs)
+            except OSError, e:
+                print e, "Impossible to remove auxiliar files"
 
 
         return 0
